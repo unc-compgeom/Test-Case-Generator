@@ -49,7 +49,7 @@ public class Main {
 		List<Edge> red = new LinkedList<Edge>();
 		// blue edges
 		List<Edge> blue = new LinkedList<Edge>();
-		for (int i = 0; i < numEdges; i++) {
+		for (int i = 0; i < numEdges / 2; i++) {
 			Point p1 = new Point(ayn.nextInt(max - min) + min, ayn.nextInt(max
 					- min)
 					+ min);
@@ -72,11 +72,46 @@ public class Main {
 					e.printStackTrace();
 					try {
 						w.close();
+						return;
 					} catch (IOException e1) {
 						e1.printStackTrace();
-						return;
+						System.exit(-1);
 					}
-					return;
+				}
+			} else {
+				// try again;
+				i--;
+			}
+
+		}
+		for (int i = 0; i < numEdges / 2; i++) {
+			Point p1 = new Point(ayn.nextInt(max - min) + min, ayn.nextInt(max
+					- min)
+					+ min);
+			Point p2 = new Point(ayn.nextInt(max - min) + min, ayn.nextInt(max
+					- min)
+					+ min);
+			Edge candidate = new Edge(p1, p2);
+			boolean doesNotIntersect = true;
+			for (Edge edge : blue) {
+				if (Predicate.edgeIntersect(candidate, edge)) {
+					doesNotIntersect = false;
+					break;
+				}
+			}
+			if (doesNotIntersect) {
+				blue.add(candidate);
+				try {
+					w.write(candidate + "\n");
+				} catch (IOException e) {
+					e.printStackTrace();
+					try {
+						w.close();
+						return;
+					} catch (IOException e1) {
+						e1.printStackTrace();
+						System.exit(-1);
+					}
 				}
 			} else {
 				// try again;
