@@ -3,10 +3,15 @@ package view;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.SplitMenuButton;
+import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.ListView;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TextField;
 
 public class ViewController {
 
@@ -19,23 +24,68 @@ public class ViewController {
 	private URL location;
 
 	@FXML
-	// fx:id="types"
-	private SplitMenuButton types; // Value injected by FXMLLoader
+	// fx:id="form_points"
+	private TextField form_points; // Value injected by FXMLLoader
+
+	@FXML
+	// fx:id="form_min"
+	private TextField form_min; // Value injected by FXMLLoader
+
+	@FXML
+	// fx:id="form_max"
+	private TextField form_max; // Value injected by FXMLLoader
+
+	@FXML
+	// fx:id="form_types"
+	private ChoiceBox<String> form_types; // Value injected by FXMLLoader
 
 	@FXML
 	// fx:id="resultTabPane"
 	private TabPane resultTabPane; // Value injected by FXMLLoader
 
 	@FXML
-	void generate(ActionEvent event) {
-		System.out.println("generate ");
+	void form_generate(ActionEvent event) {
+		System.out.println("random ");
+		int numPoints = Integer.parseInt(form_points.getText());
+		int min = Integer.parseInt(form_min.getText());
+		int max = Integer.parseInt(form_max.getText());
+
+		// TODO fork a child thread to do this
+
+		String[] args = { "points_out_", numPoints + "", min + "", max + "" };
+		String type = form_types.getValue();
+
+		Tab tab = new Tab("Results " + type);
+		ListView<String> results = new ListView<String>();
+		tab.setContent(results);
+		ObservableList<String> resultContent = FXCollections
+				.observableArrayList();
+		resultTabPane.getTabs().add(tab);
+		resultTabPane.getSelectionModel().select(tab);
+
+		// populate the result list
+		results.setItems(resultContent);
+		if (type.equals("RED BLUE")) {
+			args[0] += "redblue.txt";
+			redBlue.Generate.generate(resultContent, numPoints, min, max);
+		} else {
+			args[0] += "random.txt";
+			random.Generate.random(resultContent, numPoints, min, max);
+		}
+		System.out.println("done");
 	}
 
 	@FXML
 	// This method is called by the FXMLLoader when initialization is complete
 	void initialize() {
-		assert types != null : "fx:id=\"types\" was not injected: check your FXML file 'view.fxml'.";
+		assert form_points != null : "fx:id=\"form_points\" was not injected: check your FXML file 'view.fxml'.";
+		assert form_min != null : "fx:id=\"form_min\" was not injected: check your FXML file 'view.fxml'.";
+		assert form_max != null : "fx:id=\"form_max\" was not injected: check your FXML file 'view.fxml'.";
+		assert form_types != null : "fx:id=\"form_types\" was not injected: check your FXML file 'view.fxml'.";
 		assert resultTabPane != null : "fx:id=\"resultTabPane\" was not injected: check your FXML file 'view.fxml'.";
 
+		// TODO enum for implemented types
+		String[] types = { "RED BLUE", "RANDOM" };
+		form_types.getItems().addAll(types);
 	}
 }
