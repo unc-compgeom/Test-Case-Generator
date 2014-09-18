@@ -1,5 +1,6 @@
 package view;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -45,14 +46,12 @@ public class ViewController {
 
 	@FXML
 	void form_generate(ActionEvent event) {
-		System.out.println("random ");
 		int numPoints = Integer.parseInt(form_points.getText());
 		int min = Integer.parseInt(form_min.getText());
 		int max = Integer.parseInt(form_max.getText());
 
 		// TODO fork a child thread to do this
 
-		String[] args = { "points_out_", numPoints + "", min + "", max + "" };
 		String type = form_types.getValue();
 
 		Tab tab = new Tab("Results " + type);
@@ -66,13 +65,23 @@ public class ViewController {
 		// populate the result list
 		results.setItems(resultContent);
 		if (type.equals("RED BLUE")) {
-			args[0] += "redblue.txt";
 			redBlue.Generate.generate(resultContent, numPoints, min, max);
+			try {
+				redBlue.Writer.write("redblue_" + numPoints + "_.txt",
+						resultContent);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		} else {
-			args[0] += "random.txt";
 			random.Generate.random(resultContent, numPoints, min, max);
 		}
 		System.out.println("done");
+	}
+
+	@FXML
+	void save(ActionEvent event) {
+
 	}
 
 	@FXML
