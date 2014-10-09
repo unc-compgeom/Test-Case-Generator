@@ -1,6 +1,6 @@
 package simplePolygon;
 
-public class Main {
+class Main {
 	/*
 	 * Visibility: What can a point see. Polygon edges are obstructions.
 	 */

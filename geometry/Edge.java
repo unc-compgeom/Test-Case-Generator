@@ -1,8 +1,8 @@
-package redBlue;
+package geometry;
 
 public class Edge {
-	public Edge sym;
-	public Point o;
+	public final Edge sym;
+	public final Point o;
 
 	public Edge(Point o, Point symO) {
 		this.sym = new Edge(this, symO);
