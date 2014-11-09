@@ -1,8 +1,11 @@
 package geometry;
 
+import java.util.Comparator;
+
 public class Point {
     public final long x;
     public final long y;
+    public Point next, prev;
 
     public Point(int x, int y) {
         this.x = x;
@@ -29,4 +32,23 @@ public class Point {
         return x + " " + y;
     }
 
+
+    public static Comparator<Point> comparator() {
+        return new Comparator<Point>() {
+            @Override
+            public int compare(Point o1, Point o2) {
+                if (o1.x < o2.x) {
+                    return -1;
+                } else if (o1.x > o2.x) {
+                    return 1;
+                } else if (o1.y < o2.y) {
+                    return -1;
+                } else if (o1.y > o2.y) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+        };
+    }
 }

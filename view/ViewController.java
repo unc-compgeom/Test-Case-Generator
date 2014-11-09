@@ -1,18 +1,14 @@
 package view;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.ResourceBundle;
-
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.ListView;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.ResourceBundle;
 
 public class ViewController {
 
@@ -82,8 +78,18 @@ public class ViewController {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+        } else if (type.equals("POLYGON 2")) {
+            redBluePolygon2.Generate.generate(resultContent, numPoints, min,max);
+            try {
+                redBluePolygon2.Writer.write("redbluepolygon2_" + numPoints + ".txt",
+                        resultContent);
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         } else {
             random.Generate.random(resultContent, numPoints, min, max);
+
         }
         System.out.println("done");
     }
@@ -103,7 +109,7 @@ public class ViewController {
         assert resultTabPane != null : "fx:id=\"resultTabPane\" was not injected: check your FXML file 'view.fxml'.";
 
         // TODO enum for implemented types
-        String[] types = {"RED BLUE", "RANDOM", "RED BLUE POLYGON"};
+        String[] types = {"RED BLUE", "RANDOM", "RED BLUE POLYGON", "POLYGON 2"};
         form_types.getItems().addAll(types);
     }
 }

@@ -1,5 +1,6 @@
 package geometry;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 
 /**
@@ -9,9 +10,15 @@ public class Polygon extends LinkedList<Point> {
     @Override
     public String toString() {
         String ret = "";
-        for (Point p : this) {
-            ret += p.toString() + " ";
+        Point p;
+        Iterator<Point> it = iterator();
+        p = it.next();
+        while(it.hasNext()) {
+            Point n = it.next();
+            ret += p.toString() + " " + n.toString() + "\n";
+            p = n;
         }
-        return ret;
+
+        return ret += p.toString() + " " + get(0).toString();
     }
 }

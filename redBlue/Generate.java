@@ -2,8 +2,8 @@ package redBlue;
 
 import geometry.Edge;
 import geometry.Point;
-import predicate.Predicate;
 import javafx.collections.ObservableList;
+import predicate.Predicate;
 
 import java.util.ArrayList;
 import java.util.List;
