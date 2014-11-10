@@ -53,4 +53,41 @@
 //		assertTrue(Predicate.edgeIntersect(r0, r1, b0, b1));
 //	}
 //
-//}
+//	public void testEdgeParallel1() {
+//		Point r0 = new Point(0, 0);
+//		Point r1 = new Point(0, 1);
+//		Point b0 = new Point(0, 2);
+//		Point b1 = new Point(0, 3);
+//		assertFalse(Predicate.edgeIntersect(r0, r1, b0, b1));
+//	}
+//
+//	public void testEdgeParallel2() {
+//		Point r0 = new Point(0, 1);
+//		Point r1 = new Point(0, 0);
+//		Point b0 = new Point(0, 3);
+//		Point b1 = new Point(0, 2);
+//		assertFalse(Predicate.edgeIntersect(r0, r1, b0, b1));
+//	}
+//
+//	public void testEdgeParallel3() {
+//		Point r0 = new Point(0, 0);
+//		Point r1 = new Point(0, 2);
+//		Point b0 = new Point(0, 1);
+//		Point b1 = new Point(0, 2);
+//		assertFalse(Predicate.edgeIntersect(r0, r1, b0, b1));
+//	}
+//
+//	public void testEdgeParallel4() {
+//		Point r0 = new Point(0, 0);
+//		Point r1 = new Point(0, 2);
+//		Point b0 = new Point(0, 1);
+//		Point b1 = new Point(0, 3);
+//		assertFalse(Predicate.edgeIntersect(r0, r1, b0, b1));
+//	}
+//
+//	public void testPointComparisonEqual() {
+//		Point r0 = new Point(0, 0);
+//		Point r1 = new Point(0, 0);
+//		assertTrue(Point.comparator().compare(r0, r1) == 0);
+//	}
+// }

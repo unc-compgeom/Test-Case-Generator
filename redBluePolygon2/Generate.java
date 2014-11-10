@@ -11,7 +11,7 @@ import java.util.*;
  * Created by Vance Miller on 10/2/2014.
  */
 public class Generate {
-    public static final int NUM_EDGES = 4;
+    public static final int NUM_EDGES = 3;
 
     public static void generate(ObservableList<String> output, int numPolygons,
                                 int min, int max) {
@@ -42,7 +42,7 @@ public class Generate {
         }
 
         // formatting for Jack
-        output.set(0, red.size() * 3 + " " + blue.size() * 3 + " "
+        output.set(0, numPolygons * NUM_EDGES + " " + numPolygons * NUM_EDGES + " "
                 + intersectionCount + "");
     }
 
@@ -55,7 +55,7 @@ public class Generate {
             // Use a set to ensure uniqueness
             Set<Point> points = new TreeSet<Point>(Point.comparator());
             Random AynRand = new Random();
-            int numPoints = numPolygons * 4;
+            int numPoints = numPolygons * NUM_EDGES;
             // generate the head
             head = new Point(AynRand.nextInt(max - min) + min,
                     AynRand.nextInt(max - min) + min);
@@ -105,7 +105,7 @@ public class Generate {
                     b1 = b0.next;
                     if (Predicate.edgeIntersect(a0, a1, b0, b1)) {
                         tangled = true;
-                        if (numSplits < numPolygons) {
+                        if (numSplits < numPolygons && !adjacent(b1, a0) && !adjacent(a1, b0)) {
                             // split into two polygons
                             split(a0, a1, b0, b1);
                             numSplits++;
@@ -139,6 +139,10 @@ public class Generate {
         return polygons;
     }
 
+    private static boolean adjacent(Point a, Point b) {
+        return a.next == b;
+    }
+
     /**
      * Swaps the positions of all elements between start and stop inclusive. Stop must come after start in the list.
      *
@@ -158,27 +162,23 @@ public class Generate {
     }
 
     private static void untangle(Point a0, Point a1, Point b0, Point b1) {
-        a0.next = b0;
-        b0.prev = a0;
-        a1.next = b1;
-        b1.prev = a1;
-        reverse(a1, b0);
-    }
+        Point tmp, iterator, start, end;
+        start = a1.prev;
+        end = b0.next;
 
-    /**
-     * Follows the next pointers from a1 to b0 and reverses the list.
-     *
-     * @param a start inclusive
-     * @param b end inclusive
-     */
-    private static void reverse(Point a, Point b) {
-        Point iterator = a;
+        iterator = b0;
+        // reverse b0 to a1
         do {
-            Point tmp = iterator.next;
-            iterator.next = iterator.prev;
-            iterator.prev = tmp;
+            tmp = iterator.prev;
+            iterator.prev = iterator.next;
+            iterator.next = tmp;
             iterator = tmp;
-        } while (iterator != b);
+        } while (iterator != a1);
+
+        start.next = b0;
+        b0.prev = start;
+        end.next = a1;
+        a1.prev = end;
     }
 
     private static void split(Point a0, Point a1, Point b0, Point b1) {
