@@ -10,11 +10,15 @@ public class Point {
     public Point(int x, int y) {
         this.x = x;
         this.y = y;
+        this.next = this;
+        this.prev = this;
     }
 
     private Point(long x, long y) {
         this.x = x;
         this.y = y;
+        this.next = this;
+        this.prev = this;
     }
 
     /**
@@ -51,4 +55,9 @@ public class Point {
             }
         };
     }
+
+    public double dot(final Point v) {
+        return x * v.x + y * v.y;
+    }
+
 }

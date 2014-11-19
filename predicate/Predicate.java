@@ -81,11 +81,43 @@ public class Predicate {
         Orientation abd = orientation(a, b, d);
         Orientation cda = orientation(c, d, a);
         Orientation cdb = orientation(c, d, b);
-        if (abc == Orientation.COLINEAR || abd == Orientation.COLINEAR)
-            return false;
-        else
+        if (abc == Orientation.COLINEAR && abd == Orientation.COLINEAR) {
+            // parallel
+            if (onEdge(c, a, b)) {
+                return true;
+            } else if (onEdge(d, a, b)) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (abc == Orientation.COLINEAR) {
+            // c is either on AB or after AB, d is not on AB
+            if (onEdge(c, a, b)) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (abd == Orientation.COLINEAR) {
+            // d is either on AB or after AB, c is not on AB
+            if (onEdge(d, a, b)) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
             return (abc != abd && cda != cdb);
+        }
+    }
 
+    /**
+     * Returns true iff the edge from a to a.next and b to b.next intersect.
+     *
+     * @param a start of edge 1
+     * @param b start of edge 2
+     * @return true iff they intersect
+     */
+    public static boolean edgeIntersect(Point a, Point b) {
+        return edgeIntersect(a, a.next, b, b.next);
     }
 
     private static boolean ccw(Point p1, Point p2, Point p3) {
@@ -111,5 +143,30 @@ public class Predicate {
 
     public enum Orientation {
         CLOCKWISE, COUNTERCLOCKWISE, COLINEAR
+    }
+
+    ;
+
+    /**
+     * Tests if p is on ab. If p is on a or b returns false. If p is colinear
+     * with a and b and between them returns true. Else returns false;
+     *
+     * @param p Point to test
+     * @param a Endpoint 1
+     * @param b Endpoint 2
+     * @return true iff p is on the line ab
+     */
+    public static boolean onEdge(final Point p, final Point a, Point b) {
+        if (orientation(a, b, p) == Orientation.COLINEAR) {
+            final double dot = p.sub(a).dot(b.sub(a));
+            final double distSq = distSquared(a, b);
+            return 0 < dot && dot < distSq;
+        } else {
+            return false;
+        }
+    }
+
+    public static double distSquared(Point a, Point b) {
+        return Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2);
     }
 }

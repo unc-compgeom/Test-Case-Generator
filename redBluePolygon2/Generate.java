@@ -4,6 +4,7 @@ import geometry.Point;
 import geometry.Polygon;
 import javafx.collections.ObservableList;
 import predicate.Predicate;
+import predicate.Predicate.Orientation;
 
 import java.util.*;
 
@@ -11,39 +12,37 @@ import java.util.*;
  * Created by Vance Miller on 10/2/2014.
  */
 public class Generate {
-    public static final int NUM_EDGES = 3;
+    public static final int EDGES_PER_POLYGON = 3;
 
     public static void generate(ObservableList<String> output, int numPolygons,
                                 int min, int max) {
-        // formatting for Jack, replaced at the end
+        // replaced before generate() returns.
         output.add("Placeholder");
 
-        // red edges
+        // red polygons
         List<Polygon> red;
         red = generateNonIntersectingPolygons(numPolygons, min, max);
         for (Polygon p : red) {
             output.add(p + "");
         }
-        // blue edges
+        // blue polygons
         List<Polygon> blue;
         blue = generateNonIntersectingPolygons(numPolygons, min, max);
         for (Polygon p : blue) {
             output.add(p + "");
         }
-
         // calculate number of Polygon intersections
         int intersectionCount = 0;
         for (Polygon b : blue) {
             for (Polygon r : red) {
-                // if (Predicate.polygonIntersect(r, b)) {
-                intersectionCount++;
-                // }
+                if (Predicate.polygonIntersect(r, b)) {
+                    intersectionCount++;
+                }
             }
         }
-
-        // formatting for Jack
-        output.set(0, numPolygons * NUM_EDGES + " " + numPolygons * NUM_EDGES + " "
-                + intersectionCount + "");
+        // formatting for Matlab
+        output.set(0, numPolygons * EDGES_PER_POLYGON + " " + numPolygons
+                * EDGES_PER_POLYGON + " " + intersectionCount + "");
     }
 
     private static List<Polygon> generateNonIntersectingPolygons(
@@ -52,31 +51,64 @@ public class Generate {
         // generate random points
         {
             Point p, q;
-            // Use a set to ensure uniqueness
+            int numPoints = numPolygons * EDGES_PER_POLYGON;
+            // Insert all points into a set to ensure uniqueness
             Set<Point> points = new TreeSet<Point>(Point.comparator());
-            Random AynRand = new Random();
-            int numPoints = numPolygons * NUM_EDGES;
+            Random r = new Random();
             // generate the head
-            head = new Point(AynRand.nextInt(max - min) + min,
-                    AynRand.nextInt(max - min) + min);
-            p = head;
+            head = new Point(r.nextInt(max - min) + min, r.nextInt(max - min)
+                    + min);
             points.add(head);
             // generate the rest
-            for (int i = 1; i < numPoints; i++) {
-                q = new Point(AynRand.nextInt(max - min) + min, AynRand.nextInt(max
-                        - min)
-                        + min);
-                if (points.add(q)) {
-                    p.next = q;
-                    q.prev = p;
-                    p = q;
-                } else {
-                    i--;
+            p = head;
+            int i = 1;
+            while (i < numPoints) {
+                for (; i < numPoints; i++) {
+                    q = new Point(r.nextInt(max - min) + min, r.nextInt(max - min)
+                            + min);
+                    if (points.add(q)) {
+                        p.next = q;
+                        q.prev = p;
+                        p = q;
+                    } else {
+                        i--;
+                    }
+                }
+                boolean hasTriples = true;
+                while (hasTriples) {
+                    Point a, b, c = null;
+                    List<Point> remove = new LinkedList<Point>();
+                    Iterator<Point> ait, bit, cit;
+                    hasTriples = false;
+                    ait = points.iterator();
+                    while (ait.hasNext()) {
+                        a = ait.next();
+                        bit = points.iterator();
+                        while (bit.hasNext()) {
+                            b = bit.next();
+                            cit = points.iterator();
+                            while (cit.hasNext()) {
+                                c = cit.next();
+                                if (a == b || b == c || c == a) {
+                                    continue;
+                                }
+                                if (Predicate.orientation(a, b, c) == Orientation.COLINEAR) {
+                                    hasTriples = true;
+                                    remove.add(c);
+                                    i--;
+                                }
+                            }
+                        }
+                    }
+                    points.removeAll(remove);
+                    remove.clear();
                 }
             }
+
             p.next = head;
             head.prev = p;
         }
+
         // insert all points into a linked list
         LinkedList<Point> points = new LinkedList<Point>();
         {
@@ -92,32 +124,47 @@ public class Generate {
         boolean tangled = true;
         while (tangled) {
             tangled = false;
-            // for each crossing
+            // for each edge
             Iterator<Point> ait = points.iterator();
-            Point a0, a1;
+            Point a;
             do {
-                a0 = ait.next();
-                a1 = a0.next;
+                a = ait.next();
                 Iterator<Point> bit = points.iterator();
-                Point b0, b1;
+                Point b;
                 do {
-                    b0 = bit.next();
-                    b1 = b0.next;
-                    if (Predicate.edgeIntersect(a0, a1, b0, b1)) {
+                    b = bit.next();
+                    if (Predicate.edgeIntersect(a, b)) {
                         tangled = true;
-                        if (numSplits < numPolygons && !adjacent(b1, a0) && !adjacent(a1, b0)) {
+                        if (!pathExists(a, b, true)) {
+                            // merge into one polygon
+                            splice(a, b);
+                            numSplits--;
+                        } else if (numSplits < numPolygons
+                                && pathExists(a, b, true)) {
                             // split into two polygons
-                            split(a0, a1, b0, b1);
-                            numSplits++;
+                            splice(a, b);
+                            if (a.next.next == a) {
+                                points.remove(a);
+                                points.remove(a.next);
+                            } else if (b.next.next == b) {
+                                points.remove(b);
+                                points.remove(b.next);
+                            } else {
+                                numSplits++;
+                            }
                         } else {
                             // untangle
-                            untangle(a0, a1, b0, b1);
-                            reverseList(a1, b0, points);
+                            untangle(a, b, points);
                         }
+                        break;
                     }
                 } while (bit.hasNext());
+                if (tangled) {
+                    break;
+                }
             } while (ait.hasNext());
-            System.out.print("Done: " + numSplits * 100.0 / numPolygons + "%\r");
+            System.out
+                    .print("Done: " + numSplits * 100.0 / numPolygons + "%\r");
         }
         // separate into list of polygons
 
@@ -139,53 +186,74 @@ public class Generate {
         return polygons;
     }
 
-    private static boolean adjacent(Point a, Point b) {
-        return a.next == b;
-    }
-
-    /**
-     * Swaps the positions of all elements between start and stop inclusive. Stop must come after start in the list.
-     *
-     * @param start
-     * @param stop
-     * @param list
-     */
-    private static void reverseList(Point start, Point stop, List<Point> list) {
-        int begin = list.indexOf(start);
-        int end = list.indexOf(stop);
-        int numSwaps = (end - begin) / 2;
-        for (int i = 0; i <= numSwaps; i++) {
-            Point tmp = list.get(begin + i);
-            list.set(begin + i, list.get(end - i));
-            list.set(end - i, tmp);
+    private static boolean pathExists(Point a1, Point b0, boolean nextPrev) {
+        Point iterator = a1;
+        if (nextPrev) {
+            do {
+                if (iterator == b0) {
+                    return true;
+                }
+                iterator = iterator.next;
+            } while (iterator != a1);
+        } else {
+            do {
+                if (iterator == b0) {
+                    return true;
+                }
+                iterator = iterator.prev;
+            } while (iterator != a1);
         }
+        return false;
+
     }
 
-    private static void untangle(Point a0, Point a1, Point b0, Point b1) {
-        Point tmp, iterator, start, end;
-        start = a1.prev;
-        end = b0.next;
+    static void untangle(Point a, Point b, List<Point> points) {
+        Point tmp, iterator;
 
-        iterator = b0;
-        // reverse b0 to a1
-        do {
+        a.next.prev = a.next.next;
+        a.next.next = b.next;
+        b.next.prev = a.next;
+
+        a.next = b;
+        b.next = b.prev;
+        b.prev = a;
+
+        // while point pointers are reversed, swap them
+        iterator = b.next;
+        while (iterator.next.prev != iterator || iterator.prev.next != iterator) {
+            // do swap
             tmp = iterator.prev;
             iterator.prev = iterator.next;
             iterator.next = tmp;
-            iterator = tmp;
-        } while (iterator != a1);
+            // next point
+            iterator = iterator.next;
+        }
 
-        start.next = b0;
-        b0.prev = start;
-        end.next = a1;
-        a1.prev = end;
+        // fix the points list
+        int i = points.indexOf(a);
+
+        while (points.get(i).next != a) {
+            Point next = points.get(i).next;
+            i = (i + 1) % points.size();
+            points.set(i, next);
+        }
     }
 
-    private static void split(Point a0, Point a1, Point b0, Point b1) {
-        a0.next = b1;
-        b1.prev = a0;
-        b0.next = a1;
-        a1.prev = b0;
+    /**
+     * Splice splits the polygon if there is a path from a to b and merges it
+     * otherwise.
+     *
+     * @param a
+     * @param b
+     */
+    private static void splice(Point a, Point b) {
+        Point tmp = b.next;
+
+        b.next = a.next;
+        b.next.prev = b;
+
+        a.next = tmp;
+        a.next.prev = a;
     }
 }
 
