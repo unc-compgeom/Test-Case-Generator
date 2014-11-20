@@ -16,6 +16,7 @@ public class Generate {
 
     public static void generate(ObservableList<String> output, int numPolygons,
                                 int min, int max) {
+        int numRed = 0, numBlue = 0;
         // replaced before generate() returns.
         output.add("Placeholder");
 
@@ -24,12 +25,14 @@ public class Generate {
         red = generateNonIntersectingPolygons(numPolygons, min, max);
         for (Polygon p : red) {
             output.add(p + "");
+            numRed += p.size();
         }
         // blue polygons
         List<Polygon> blue;
         blue = generateNonIntersectingPolygons(numPolygons, min, max);
         for (Polygon p : blue) {
             output.add(p + "");
+            numBlue += p.size();
         }
         // calculate number of Polygon intersections
         int intersectionCount = 0;
@@ -41,147 +44,163 @@ public class Generate {
             }
         }
         // formatting for Matlab
-        output.set(0, numPolygons * EDGES_PER_POLYGON + " " + numPolygons
-                * EDGES_PER_POLYGON + " " + intersectionCount + "");
+        output.set(0, numRed + " " + numBlue + " " + intersectionCount + "");
+    }
+
+    private static Point generatePolygon(int numPoints, int min, int max) {
+        Point p, q, head;
+        // Insert all points into a set to ensure uniqueness
+        Set<Point> points = new TreeSet<Point>(Point.comparator());
+        Polygon polygon = new Polygon();
+        Random r = new Random();
+        // generate the polygon
+        while (points.size() < numPoints) {
+            while (points.size() < numPoints) {
+                p = new Point(r.nextInt(max - min) + min, r.nextInt(max - min)
+                        + min);
+               if (points.add(p)) {
+                   polygon.add(p);
+               }
+            }
+            boolean hasTriples = true;
+            List<Point> toRemove = new LinkedList<Point>();
+            while (hasTriples) {
+                hasTriples = false;
+                Point a, b, c;
+                Iterator<Point> ait, bit, cit;
+                ait = points.iterator();
+                loop1: while (ait.hasNext()) {
+                    a = ait.next();
+                    bit = points.iterator();
+                    while (bit.hasNext() && a.valid) {
+                        b = bit.next();
+                        if (b == a) continue;
+                        cit = points.iterator();
+                        while (cit.hasNext() && b.valid) {
+                            c = cit.next();
+                            if (b == c || c == a || !c.valid) {
+                                continue;
+                            }
+                            if (Predicate.orientation(a, b, c) == Orientation.COLINEAR) {
+                                hasTriples = true;
+                                c.valid = false;
+                                toRemove.add(c);
+                            }
+                        }
+                    }
+                }
+                if (hasTriples) {
+                    points.removeAll(toRemove);
+                    polygon.removeAll(toRemove);
+                    toRemove.clear();
+                }
+            }
+        }
+
+        Iterator<Point> it = polygon.iterator();
+        head = it.next();
+        p = head;
+        q = head;
+        while (it.hasNext()) {
+            q = it.next();
+            p.next = q;
+            q.prev = p;
+            p = q;
+        }
+        q.next = head;
+        head.prev = q;
+        return head;
     }
 
     private static List<Polygon> generateNonIntersectingPolygons(
             int numPolygons, int min, int max) {
-        Point head;
-        // generate random points
-        {
-            Point p, q;
-            int numPoints = numPolygons * EDGES_PER_POLYGON;
-            // Insert all points into a set to ensure uniqueness
-            Set<Point> points = new TreeSet<Point>(Point.comparator());
-            Random r = new Random();
-            // generate the head
-            head = new Point(r.nextInt(max - min) + min, r.nextInt(max - min)
-                    + min);
-            points.add(head);
-            // generate the rest
-            p = head;
-            int i = 1;
-            while (i < numPoints) {
-                for (; i < numPoints; i++) {
-                    q = new Point(r.nextInt(max - min) + min, r.nextInt(max - min)
-                            + min);
-                    if (points.add(q)) {
-                        p.next = q;
-                        q.prev = p;
-                        p = q;
-                    } else {
-                        i--;
-                    }
-                }
-                boolean hasTriples = true;
-                while (hasTriples) {
-                    Point a, b, c = null;
-                    List<Point> remove = new LinkedList<Point>();
-                    Iterator<Point> ait, bit, cit;
-                    hasTriples = false;
-                    ait = points.iterator();
-                    while (ait.hasNext()) {
-                        a = ait.next();
-                        bit = points.iterator();
-                        while (bit.hasNext()) {
-                            b = bit.next();
-                            cit = points.iterator();
-                            while (cit.hasNext()) {
-                                c = cit.next();
-                                if (a == b || b == c || c == a) {
-                                    continue;
-                                }
-                                if (Predicate.orientation(a, b, c) == Orientation.COLINEAR) {
-                                    hasTriples = true;
-                                    remove.add(c);
-                                    i--;
-                                }
-                            }
-                        }
-                    }
-                    points.removeAll(remove);
-                    remove.clear();
-                }
-            }
 
-            p.next = head;
-            head.prev = p;
+        List<Point> polygons = null;
+        double epsilon = 0.01;
+        while (polygons == null || polygons.size() < numPolygons * epsilon ) {
+            // make a special polygon
+            Point head = generatePolygon(numPolygons * EDGES_PER_POLYGON, min, max);
+
+            // untangle intersections and create polygons
+            polygons = createPolygons(head, numPolygons);
         }
 
-        // insert all points into a linked list
-        LinkedList<Point> points = new LinkedList<Point>();
-        {
-            Point it = head;
+        // convert to polygon objects
+        List<Polygon> convertedPolygons = new ArrayList<Polygon>(polygons.size());
+        for (Point p : polygons) {
+            Polygon tmp = new Polygon();
+            Point iterator = p;
             do {
-                points.add(it);
-                it = it.next;
-            } while (it != head);
+                tmp.add(iterator);
+                iterator = iterator.next;
+            } while (iterator != p);
+            convertedPolygons.add(tmp);
         }
+        return convertedPolygons;
+    }
 
-        // untangle intersections and create polygons
-        int numSplits = 1;
+    private static List<Point> createPolygons(Point head, int target) {
+        // keep all polygons in a linked list
+        List<Point> polygons = new LinkedList<Point>();
+        polygons.add(head);
         boolean tangled = true;
         while (tangled) {
             tangled = false;
-            // for each edge
-            Iterator<Point> ait = points.iterator();
-            Point a;
-            do {
-                a = ait.next();
-                Iterator<Point> bit = points.iterator();
-                Point b;
-                do {
-                    b = bit.next();
-                    if (Predicate.edgeIntersect(a, b)) {
-                        tangled = true;
-                        if (!pathExists(a, b, true)) {
-                            // merge into one polygon
-                            splice(a, b);
-                            numSplits--;
-                        } else if (numSplits < numPolygons
-                                && pathExists(a, b, true)) {
-                            // split into two polygons
-                            splice(a, b);
-                            if (a.next.next == a) {
-                                points.remove(a);
-                                points.remove(a.next);
-                            } else if (b.next.next == b) {
-                                points.remove(b);
-                                points.remove(b.next);
-                            } else {
-                                numSplits++;
-                            }
-                        } else {
-                            // untangle
-                            untangle(a, b, points);
-                        }
-                        break;
-                    }
-                } while (bit.hasNext());
-                if (tangled) {
-                    break;
-                }
-            } while (ait.hasNext());
-            System.out
-                    .print("Done: " + numSplits * 100.0 / numPolygons + "%\r");
-        }
-        // separate into list of polygons
-
-        List<Polygon> polygons = new ArrayList<Polygon>(numSplits);
-        {
-            Point iterator = head;
-            Polygon tmp = new Polygon();
-            for (Point p : points) {
-                if (p != iterator) {
-                    polygons.add(tmp);
-                    tmp = new Polygon();
-                    iterator = p;
-                }
-                tmp.add(p);
-                iterator = iterator.next;
+            // for all pairs of polygons
+            Iterator<Point> polygon1It = polygons.iterator();
+            if (!polygon1It.hasNext()) {
+                return null;
             }
-            polygons.add(tmp);
+            Point polygon1;
+            outerloop:
+            do {
+                polygon1 = polygon1It.next();
+                Iterator<Point> polygon2It = polygons.iterator();
+                Point polygon2;
+                do {
+                    polygon2 = polygon2It.next();
+                    // for all pairs of edges in polygon1 and polygon2
+                    Point p1 = polygon1;
+                    do {
+                        Point p2 = polygon2;
+                        do {
+                            // find intersections
+                            if (Predicate.edgeIntersect(p1, p2)) {
+                                tangled = true;
+                                if (!pathExists(p1, p2, true)) {
+                                    // merge into one polygon
+                                    splice(p1, p2);
+                                    polygons.remove(polygon1);
+                                    polygons.remove(polygon2);
+                                    polygons.add(p1);
+                                } else if (polygons.size() < target
+                                        && pathExists(p1, p2, true)) {
+                                    // split into two polygons
+                                    splice(p1, p2);
+                                    polygons.remove(polygon1);
+                                    polygons.remove(polygon2);
+                                    polygons.add(p1);
+                                    polygons.add(p2);
+                                } else {
+                                    // untangle
+                                    untangle(p1, p2);
+                                }
+                                if (p1.next.next == p1) {
+                                    polygons.remove(p1);
+                                }
+                                if (p2.next.next == p2) {
+                                    polygons.remove(p2);
+                                }
+                                break outerloop;
+                            }
+                            p2 = p2.next;
+                        } while (p2 != polygon2);
+                        p1 = p1.next;
+                    } while (p1 != polygon1);
+                } while (polygon2It.hasNext());
+            } while (polygon1It.hasNext());
+            System.out
+                    .print("Done: " + polygons.size() * 100.0 / target + "%\r");
         }
         return polygons;
     }
@@ -207,7 +226,7 @@ public class Generate {
 
     }
 
-    static void untangle(Point a, Point b, List<Point> points) {
+    static void untangle(Point a, Point b) {
         Point tmp, iterator;
 
         a.next.prev = a.next.next;
@@ -228,15 +247,6 @@ public class Generate {
             // next point
             iterator = iterator.next;
         }
-
-        // fix the points list
-        int i = points.indexOf(a);
-
-        while (points.get(i).next != a) {
-            Point next = points.get(i).next;
-            i = (i + 1) % points.size();
-            points.set(i, next);
-        }
     }
 
     /**
@@ -256,18 +266,3 @@ public class Generate {
         a.next.prev = a;
     }
 }
-
-/**
- * random points
- *
- * pick cycle, something that avoids loops
- *
- * need to reverse list when swapping edges
- *
- * Get any number of polygons that you want
- *
- * Split loops when possible. When forced to merge, you avoid creating bad cases
- *
- * random triangulation, Hamiltonian cycle
- *
- */

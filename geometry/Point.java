@@ -6,6 +6,7 @@ public class Point {
     public final long x;
     public final long y;
     public Point next, prev;
+    public boolean valid = true;
 
     public Point(int x, int y) {
         this.x = x;

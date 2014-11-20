@@ -77,6 +77,9 @@ public class Predicate {
      * @return true iff e1 and e2 intersect
      */
     public static boolean edgeIntersect(Point a, Point b, Point c, Point d) {
+        if (a == c && b == d) {
+            return false;
+        }
         Orientation abc = orientation(a, b, c);
         Orientation abd = orientation(a, b, d);
         Orientation cda = orientation(c, d, a);
